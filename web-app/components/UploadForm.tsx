@@ -204,12 +204,18 @@ export default function UploadForm() {
           className="inline-flex h-12 items-center justify-center rounded-full bg-accent px-6 text-sm font-semibold tracking-wide text-white transition-colors duration-200 hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-55"
         >
           {loading ? (
-            <span className="animate-pulse-soft">Extracting & filling form…</span>
+            <span className="animate-pulse-soft">
+              Extracting & filling form…
+            </span>
           ) : (
             `Upload & Autofill${fileCount > 0 ? ` (${fileCount})` : ""}`
           )}
         </button>
-
+        {loading && (
+          <p className="text-sm text-muted">
+            Close the browser window when done to see results
+          </p>
+        )}
         {error && (
           <p
             role="alert"

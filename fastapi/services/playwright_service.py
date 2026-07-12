@@ -44,14 +44,14 @@ def _normalize_field_type(html_type: str, is_group: bool) -> str:
     return html_type
 
 
-async def _wait_until_browser_closed(browser) -> None:
-    disconnected = asyncio.Event()
-
-    def _on_disconnect(_: object) -> None:
-        disconnected.set()
-
-    browser.on("disconnected", _on_disconnect)
-    await disconnected.wait()
+async def _wait_until_browser_closed(browser, page: Page) -> None:
+    # On macOS, closing the window closes the page but keeps the browser alive.
+    closed = asyncio.Event()
+    page.on("close", lambda _: closed.set())
+    browser.on("disconnected", lambda _: closed.set())
+    await closed.wait()
+    if browser.is_connected():
+        await browser.close()
 
 
 async def extract_form_schema(url: str | None = None) -> FormSchema:
@@ -132,7 +132,7 @@ async def fill_form(
                 "Headful mode: filled form is open. "
                 "Close the browser window when done inspecting."
             )
-            await _wait_until_browser_closed(browser)
+            await _wait_until_browser_closed(browser, page)
         else:
             await browser.close()
     return {"filled": filled, "skipped": skipped}
