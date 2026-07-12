@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# System deps (macOS): brew install tesseract poppler
+
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 FASTAPI_DIR="$ROOT_DIR/fastapi"
 WEB_APP_DIR="$ROOT_DIR/web-app"
@@ -16,6 +18,7 @@ if [[ ! -d "$FASTAPI_DIR/.venv" ]]; then
   echo "Creating Python virtual environment in fastapi/.venv..."
   python3 -m venv "$FASTAPI_DIR/.venv"
   "$FASTAPI_DIR/.venv/bin/pip" install -r "$FASTAPI_DIR/requirements.txt"
+  "$FASTAPI_DIR/.venv/bin/playwright" install chromium
 fi
 
 if [[ ! -f "$FASTAPI_DIR/.env" ]]; then

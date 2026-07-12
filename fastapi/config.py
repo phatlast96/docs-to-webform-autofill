@@ -1,5 +1,7 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+FORM_URL = "https://mendrika-alma.github.io/form-submission/"
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
@@ -9,6 +11,9 @@ class Settings(BaseSettings):
     )
 
     openai_api_key: str
+    openai_model: str = "gpt-4o-mini"
+    form_url: str = FORM_URL
+    playwright_headful: bool = False
 
 
 settings = Settings()
