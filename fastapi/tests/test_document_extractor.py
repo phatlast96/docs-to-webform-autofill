@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from services.document_extractor import extract_all
+from services.document_extractor import _prepare_raw_files_for_vision, extract_all
 
 
 def test_pdf_extraction_includes_text_not_just_acroform():
@@ -24,3 +24,12 @@ def test_pdf_extraction_includes_text_not_just_acroform():
     assert "### Extracted Text" in text
     assert "Form G-28" in text
     assert len(text) > 1000
+
+
+def test_prepare_raw_files_for_vision_skips_text_extraction():
+    pdf_path = Path(__file__).resolve().parent.parent.parent / "data" / "Example_G-28.pdf"
+    data = pdf_path.read_bytes()
+    vision_items = _prepare_raw_files_for_vision([("Example_G-28.pdf", data)])
+
+    assert len(vision_items) > 0
+    assert all(mime == "image/png" for mime, _ in vision_items)

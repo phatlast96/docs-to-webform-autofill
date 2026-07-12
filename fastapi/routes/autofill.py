@@ -1,4 +1,4 @@
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 
 from schemas.autofill import AutofillResponse
 from services.autofill_service import run_autofill
@@ -10,6 +10,7 @@ router = APIRouter()
 async def autofill(
     images: list[UploadFile] = File(default=[]),
     pdfs: list[UploadFile] = File(default=[]),
+    use_raw_documents: bool = Form(False),
 ) -> AutofillResponse:
     if not images and not pdfs:
         raise HTTPException(400, "Upload at least one image or PDF")
@@ -20,4 +21,4 @@ async def autofill(
     for pdf in pdfs:
         files.append((pdf.filename or "document.pdf", await pdf.read()))
 
-    return await run_autofill(files)
+    return await run_autofill(files, use_raw_documents=use_raw_documents)

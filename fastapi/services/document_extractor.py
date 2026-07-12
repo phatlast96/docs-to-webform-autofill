@@ -107,3 +107,31 @@ def extract_all(files: list[tuple[str, bytes]]) -> list[ExtractedDocument]:
                 )
             )
     return results
+
+
+def _prepare_raw_files_for_vision(
+    files: list[tuple[str, bytes]],
+) -> list[tuple[str, str]]:
+    """Send raw images and PDF pages to vision — no OCR or text extraction."""
+    vision_items: list[tuple[str, str]] = []
+    for filename, data in files:
+        if data[:4] == b"%PDF":
+            for page_num, img in enumerate(convert_from_bytes(data), start=1):
+                buf = io.BytesIO()
+                img.save(buf, format="PNG")
+                b64 = base64.b64encode(buf.getvalue()).decode()
+                vision_items.append(("image/png", b64))
+        else:
+            mime = _guess_image_mime(data)
+            b64 = base64.b64encode(data).decode()
+            vision_items.append((mime, b64))
+    return vision_items
+
+
+def prepare_documents(
+    files: list[tuple[str, bytes]],
+) -> tuple[str, list[tuple[str, str]]]:
+    docs = extract_all(files)
+    document_text = "\n\n".join(f"### {d.filename}\n{d.text}" for d in docs)
+    image_b64_list = [(d.mime_type, d.image_b64) for d in docs if d.image_b64]
+    return document_text, image_b64_list

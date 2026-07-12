@@ -115,6 +115,7 @@ function FileDropZone({
 export default function UploadForm() {
   const imageId = useId();
   const pdfId = useId();
+  const [useRawDocuments, setUseRawDocuments] = useState(false);
   const [images, setImages] = useState<File[]>([]);
   const [pdfs, setPdfs] = useState<File[]>([]);
   const [loading, setLoading] = useState(false);
@@ -133,7 +134,7 @@ export default function UploadForm() {
     setError(null);
     setResult(null);
     try {
-      setResult(await submitAutofill(images, pdfs));
+      setResult(await submitAutofill(images, pdfs, useRawDocuments));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed");
     } finally {
@@ -177,6 +178,24 @@ export default function UploadForm() {
           onChange={setPdfs}
         />
       </section>
+
+      <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-border bg-surface-muted/50 px-4 py-4 transition-colors hover:bg-surface-muted">
+        <input
+          type="checkbox"
+          checked={useRawDocuments}
+          onChange={(e) => setUseRawDocuments(e.target.checked)}
+          className="mt-0.5 h-4 w-4 accent-accent"
+        />
+        <span className="flex flex-col gap-1">
+          <span className="text-sm font-semibold text-foreground">
+            Use raw documents in LLM (slower, more accurate)
+          </span>
+          <span className="text-sm leading-relaxed text-muted">
+            Send original images and PDF pages directly to OpenAI vision.
+            When off, documents are preprocessed with OCR and PDF text extraction first.
+          </span>
+        </span>
+      </label>
 
       <div className="flex flex-col gap-3">
         <button
