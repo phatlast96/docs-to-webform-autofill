@@ -49,6 +49,9 @@ async def extract_form_schema(url: str | None = None) -> FormSchema:
         page = await browser.new_page()
         await page.goto(url, wait_until="networkidle")
         raw = await page.evaluate(JS_EXTRACT_FIELDS)
+        await page.evaluate(
+            "() => document.querySelectorAll('style').forEach(el => el.remove())"
+        )
         page_html = await page.content()
         await browser.close()
 

@@ -28,13 +28,25 @@ def _guess_image_mime(data: bytes) -> str:
 
 def _extract_pdf_text(data: bytes) -> str:
     reader = PdfReader(io.BytesIO(data))
-    if reader.get_fields():
-        parts = [f"{k}: {v.get('/V', '')}" for k, v in reader.get_fields().items()]
-        if any(parts):
-            return "\n".join(str(p) for p in parts)
-    text = "\n".join(page.extract_text() or "" for page in reader.pages)
-    if text.strip():
-        return text
+    sections: list[str] = []
+
+    fields = reader.get_fields()
+    if fields:
+        acroform_lines = [
+            f"{k}: {v.get('/V', '')}"
+            for k, v in fields.items()
+            if v.get("/V", "")
+        ]
+        if acroform_lines:
+            sections.append("### Acroform Fields\n" + "\n".join(acroform_lines))
+
+    text = "\n".join(page.extract_text() or "" for page in reader.pages).strip()
+    if text:
+        sections.append("### Extracted Text\n" + text)
+
+    if sections:
+        return "\n\n".join(sections)
+
     images = convert_from_bytes(data)
     return "\n".join(pytesseract.image_to_string(img) for img in images)
 
