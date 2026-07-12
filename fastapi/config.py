@@ -13,8 +13,8 @@ class Settings(BaseSettings):
     openai_api_key: str
     openai_model: str = "gpt-4o-mini"
     form_url: str = FORM_URL
-    playwright_headful: bool = False
-    debug: bool = False
+    playwright_headful: bool = True
+    debug: bool = True
 
 
 settings = Settings()
