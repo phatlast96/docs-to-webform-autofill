@@ -1,9 +1,27 @@
+from datetime import datetime, timezone
+from pathlib import Path
+
+from config import settings
 from schemas.autofill import AutofillResponse
 from services.document_extractor import extract_all
 from services.form_schema import build_json_schema, format_fields_for_prompt
 from services.openai_client import extract_form_values
 from services.playwright_service import extract_form_schema, fill_form
-from services.prompts import build_autofill_prompt
+from services.prompts import AUTOFILL_SYSTEM, build_autofill_prompt
+
+PROMPT_OUTPUT_DIR = Path(__file__).resolve().parent.parent / "prompt-output"
+
+
+def _write_prompt_debug(prompt: str) -> Path:
+    """Write the interpolated prompt to prompt-output/ for debugging."""
+    PROMPT_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    path = PROMPT_OUTPUT_DIR / f"autofill-prompt-{stamp}.txt"
+    path.write_text(
+        f"=== SYSTEM ===\n{AUTOFILL_SYSTEM}\n\n=== USER ===\n{prompt}\n",
+        encoding="utf-8",
+    )
+    return path
 
 
 async def run_autofill(files: list[tuple[str, bytes]]) -> AutofillResponse:
@@ -24,6 +42,10 @@ async def run_autofill(files: list[tuple[str, bytes]]) -> AutofillResponse:
         page_html=form_schema.page_html,
         document_text=document_text,
     )
+
+    if settings.debug:
+        debug_path = _write_prompt_debug(prompt)
+        print(f"Wrote prompt debug output to {debug_path}")
 
     # Step 5: OpenAI structured output
     llm_output = extract_form_values(prompt, json_schema, image_b64_list)
