@@ -115,7 +115,7 @@ function FileDropZone({
 export default function UploadForm() {
   const imageId = useId();
   const pdfId = useId();
-  const [useRawDocuments, setUseRawDocuments] = useState(false);
+  const [useRawDocuments, setUseRawDocuments] = useState(true);
   const [images, setImages] = useState<File[]>([]);
   const [pdfs, setPdfs] = useState<File[]>([]);
   const [loading, setLoading] = useState(false);
