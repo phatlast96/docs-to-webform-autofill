@@ -26,19 +26,46 @@ def _guess_image_mime(data: bytes) -> str:
     return "image/png"
 
 
+def _extract_pdf_widget_fields(reader: PdfReader) -> list[str]:
+    """Extract filled values from page widget annotations.
+
+    pypdf's get_fields() misses most values when the AcroForm tree is broken.
+    Walking /Annots widgets is more reliable for PDFs like USCIS G-28.
+    """
+    lines: list[str] = []
+    skip_values = {"", "N/A", "/Off"}
+
+    for page in reader.pages:
+        annots = page.get("/Annots")
+        if not annots:
+            continue
+        annots = annots.get_object()
+        for annot_ref in annots:
+            annot = annot_ref.get_object()
+            if annot.get("/Subtype") != "/Widget":
+                continue
+            name = annot.get("/T")
+            if not name:
+                continue
+            val = annot.get("/V")
+            if val is None:
+                val = annot.get("/DV")
+            if val is None:
+                continue
+            val_str = str(val).strip()
+            if val_str in skip_values:
+                continue
+            lines.append(f"{name}: {val_str}")
+    return lines
+
+
 def _extract_pdf_text(data: bytes) -> str:
     reader = PdfReader(io.BytesIO(data))
     sections: list[str] = []
 
-    fields = reader.get_fields()
-    if fields:
-        acroform_lines = [
-            f"{k}: {v.get('/V', '')}"
-            for k, v in fields.items()
-            if v.get("/V", "")
-        ]
-        if acroform_lines:
-            sections.append("### Acroform Fields\n" + "\n".join(acroform_lines))
+    widget_lines = _extract_pdf_widget_fields(reader)
+    if widget_lines:
+        sections.append("### Form Fields\n" + "\n".join(widget_lines))
 
     text = "\n".join(page.extract_text() or "" for page in reader.pages).strip()
     if text:

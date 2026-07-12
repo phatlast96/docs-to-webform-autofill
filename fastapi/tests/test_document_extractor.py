@@ -15,6 +15,11 @@ def test_pdf_extraction_includes_text_not_just_acroform():
     assert "Pt3Line5a_FamilyName[1]: Smith" in text
     assert "b.smith_00@test.ai" in text
 
+    # Widget annotation extraction (broken AcroForm tree misses these via get_fields)
+    assert "Pt2Line1b_BarNumber[0]: 12083456" in text
+    assert "Pt2Line1a_LicensingAuthority[0]: State Bar of California" in text
+    assert "immigration@tryalma.ai" in text
+
     # Full page text should also be included (was previously skipped)
     assert "### Extracted Text" in text
     assert "Form G-28" in text

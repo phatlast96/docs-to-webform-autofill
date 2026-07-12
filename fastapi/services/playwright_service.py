@@ -1,3 +1,5 @@
+import asyncio
+
 from playwright.async_api import Page, async_playwright
 
 from config import settings
@@ -40,6 +42,16 @@ def _normalize_field_type(html_type: str, is_group: bool) -> str:
     if html_type == "select-one":
         return "select"
     return html_type
+
+
+async def _wait_until_browser_closed(browser) -> None:
+    disconnected = asyncio.Event()
+
+    def _on_disconnect(_: object) -> None:
+        disconnected.set()
+
+    browser.on("disconnected", _on_disconnect)
+    await disconnected.wait()
 
 
 async def extract_form_schema(url: str | None = None) -> FormSchema:
@@ -115,7 +127,14 @@ async def fill_form(
             except Exception as e:
                 skipped.append(f"{name}:{e}")
 
-        await browser.close()
+        if settings.playwright_headful:
+            print(
+                "Headful mode: filled form is open. "
+                "Close the browser window when done inspecting."
+            )
+            await _wait_until_browser_closed(browser)
+        else:
+            await browser.close()
     return {"filled": filled, "skipped": skipped}
 
 
