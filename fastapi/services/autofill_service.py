@@ -48,13 +48,15 @@ async def run_autofill(files: list[tuple[str, bytes]]) -> AutofillResponse:
         print(f"Wrote prompt debug output to {debug_path}")
 
     # Step 5: OpenAI structured output
-    llm_output = extract_form_values(prompt, json_schema, image_b64_list)
+    extraction = extract_form_values(prompt, json_schema, image_b64_list)
 
     # Step 6: Playwright fill form
-    fill_result = await fill_form(llm_output)
+    fill_result = await fill_form(extraction.llm_output)
 
     return AutofillResponse(
         form_field_count=len(form_schema.fields),
-        llm_output=llm_output,
+        llm_output=extraction.llm_output,
         fill_result=fill_result,
+        input_tokens=extraction.input_tokens,
+        output_tokens=extraction.output_tokens,
     )

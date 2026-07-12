@@ -1,4 +1,5 @@
 import json
+from dataclasses import dataclass
 
 from openai import OpenAI
 
@@ -8,11 +9,18 @@ from services.prompts import AUTOFILL_SYSTEM
 client = OpenAI(api_key=settings.openai_api_key)
 
 
+@dataclass
+class OpenAIExtractionResult:
+    llm_output: dict
+    input_tokens: int
+    output_tokens: int
+
+
 def extract_form_values(
     prompt: str,
     json_schema: dict,
     image_b64_list: list[tuple[str, str]],
-) -> dict:
+) -> OpenAIExtractionResult:
     content: list[dict] = [{"type": "text", "text": prompt}]
     for mime, b64 in image_b64_list:
         content.append(
@@ -37,4 +45,9 @@ def extract_form_values(
             },
         },
     )
-    return json.loads(response.choices[0].message.content)
+    usage = response.usage
+    return OpenAIExtractionResult(
+        llm_output=json.loads(response.choices[0].message.content),
+        input_tokens=usage.prompt_tokens if usage else 0,
+        output_tokens=usage.completion_tokens if usage else 0,
+    )

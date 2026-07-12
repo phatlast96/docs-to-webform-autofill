@@ -214,7 +214,9 @@ export default function UploadForm() {
               <p className="text-sm text-muted">
                 {result.form_field_count} form fields ·{" "}
                 {result.fill_result.filled.length} filled ·{" "}
-                {result.fill_result.skipped.length} skipped
+                {result.fill_result.skipped.length} skipped ·{" "}
+                {result.input_tokens.toLocaleString()} input tokens ·{" "}
+                {result.output_tokens.toLocaleString()} output tokens
               </p>
             </div>
           </div>
