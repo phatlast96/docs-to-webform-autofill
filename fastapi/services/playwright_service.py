@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 
 from playwright.async_api import Page, async_playwright
 
@@ -44,14 +45,34 @@ def _normalize_field_type(html_type: str, is_group: bool) -> str:
     return html_type
 
 
-async def _wait_until_browser_closed(browser, page: Page) -> None:
-    # On macOS, closing the window closes the page but keeps the browser alive.
+async def _headful_session_lifetime(p, browser, page: Page) -> None:
+    """Keep playwright alive until the browser is closed, then clean up."""
     closed = asyncio.Event()
     page.on("close", lambda _: closed.set())
     browser.on("disconnected", lambda _: closed.set())
-    await closed.wait()
-    if browser.is_connected():
-        await browser.close()
+
+    async def _poll() -> None:
+        while not closed.is_set():
+            try:
+                await page.title()
+            except Exception:
+                closed.set()
+                return
+            if page.is_closed() or not browser.is_connected():
+                closed.set()
+                return
+            await asyncio.sleep(0.5)
+
+    poll_task = asyncio.create_task(_poll())
+    try:
+        await closed.wait()
+    finally:
+        poll_task.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await poll_task
+        if browser.is_connected():
+            await browser.close()
+        await p.stop()
 
 
 async def extract_form_schema(url: str | None = None) -> FormSchema:
@@ -109,11 +130,12 @@ async def fill_form(
     url = url or settings.form_url
     filled: list[str] = []
     skipped: list[str] = []
-    async with async_playwright() as p:
-        browser = await p.chromium.launch(
-            headless=not settings.playwright_headful,
-            slow_mo=200 if settings.playwright_headful else 0,
-        )
+    p = await async_playwright().start()
+    browser = await p.chromium.launch(
+        headless=not settings.playwright_headful,
+        slow_mo=200 if settings.playwright_headful else 0,
+    )
+    try:
         page = await browser.new_page()
         await page.goto(url, wait_until="networkidle")
 
@@ -127,15 +149,23 @@ async def fill_form(
             except Exception as e:
                 skipped.append(f"{name}:{e}")
 
+        result = {"filled": filled, "skipped": skipped}
         if settings.playwright_headful:
             print(
-                "Headful mode: filled form is open. "
-                "Close the browser window when done inspecting."
+                "Headful mode: filled form is open for inspection. "
+                "Results are returned immediately; close the browser when done."
             )
-            await _wait_until_browser_closed(browser, page)
-        else:
+            asyncio.create_task(_headful_session_lifetime(p, browser, page))
+            return result
+
+        await browser.close()
+        await p.stop()
+        return result
+    except Exception:
+        if browser.is_connected():
             await browser.close()
-    return {"filled": filled, "skipped": skipped}
+        await p.stop()
+        raise
 
 
 async def _fill_field(page: Page, name: str, value: str | bool) -> None:

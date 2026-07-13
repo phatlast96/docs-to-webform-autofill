@@ -158,6 +158,7 @@ export default function UploadForm() {
           Upload passport images and G-28 PDFs. We extract the fields, map them with AI,
           and fill the target form for you.
         </p>
+        <p>Note: Browser (for browser automation) will open up briefly and upon up again to do the real work. Please be patient.</p>
       </header>
 
       <section className="flex flex-col gap-5" aria-label="Document uploads">
