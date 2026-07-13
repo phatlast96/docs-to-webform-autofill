@@ -10,6 +10,9 @@ pip install -r requirements.txt
 ## 2. Set Environment Variables
 
 The only thing really needed is the OpenAI API key.
+
+Update the FORM_URL to have it adapt to the form you are trying to fill out.
+
 ```bash
 cp fastapi/.env.example fastapi/.env
 ```
