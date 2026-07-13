@@ -28,9 +28,10 @@ async def run_autofill(
     files: list[tuple[str, bytes]],
     *,
     use_raw_documents: bool = False,
+    form_url: str | None = None,
 ) -> AutofillResponse:
     # Step 1: Extract web form inputs (work backwards)
-    form_schema = await extract_form_schema()
+    form_schema = await extract_form_schema(form_url)
 
     # Step 2: Build structured output schema from extracted fields
     json_schema = build_json_schema(form_schema.fields)
@@ -58,7 +59,7 @@ async def run_autofill(
     extraction = extract_form_values(prompt, json_schema, image_b64_list)
 
     # Step 6: Playwright fill form
-    fill_result = await fill_form(extraction.llm_output)
+    fill_result = await fill_form(extraction.llm_output, form_url)
 
     return AutofillResponse(
         form_field_count=len(form_schema.fields),

@@ -115,6 +115,7 @@ function FileDropZone({
 export default function UploadForm() {
   const imageId = useId();
   const pdfId = useId();
+  const [formUrl, setFormUrl] = useState("");
   const [useRawDocuments, setUseRawDocuments] = useState(true);
   const [images, setImages] = useState<File[]>([]);
   const [pdfs, setPdfs] = useState<File[]>([]);
@@ -134,7 +135,8 @@ export default function UploadForm() {
     setError(null);
     setResult(null);
     try {
-      setResult(await submitAutofill(images, pdfs, useRawDocuments));
+      const resolvedFormUrl = formUrl.trim() || undefined;
+      setResult(await submitAutofill(images, pdfs, useRawDocuments, resolvedFormUrl));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed");
     } finally {
@@ -160,6 +162,22 @@ export default function UploadForm() {
         </p>
         <p>Note: Browser (for browser automation) will open up briefly and upon up again to do the real work. Please be patient.</p>
       </header>
+
+      <label className="flex flex-col gap-2">
+        <span className="text-sm font-semibold tracking-wide text-foreground">
+          Web Form URL to Autofill
+        </span>
+        <input
+          type="url"
+          value={formUrl}
+          onChange={(e) => setFormUrl(e.target.value)}
+          placeholder="https://example.com/form"
+          className="rounded-2xl border border-border bg-surface-muted/50 px-4 py-3 text-sm text-foreground placeholder:text-muted focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
+        />
+        <span className="text-xs text-muted">
+          Leave blank to use the backend default from FORM_URL.
+        </span>
+      </label>
 
       <section className="flex flex-col gap-5" aria-label="Document uploads">
         <FileDropZone
